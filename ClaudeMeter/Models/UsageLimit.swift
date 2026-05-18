@@ -40,11 +40,43 @@ extension UsageLimit {
         }
     }
 
-    /// Human-readable reset time (uses system timezone via RelativeDateTimeFormatter)
+    /// Human-readable reset time, rounded up to avoid understating remaining time.
     var resetDescription: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: resetAt, relativeTo: Date())
+        Self.resetDescription(for: resetAt.timeIntervalSinceNow)
+    }
+
+    static func resetDescription(for remaining: TimeInterval) -> String {
+        guard remaining > 0 else {
+            return "now"
+        }
+
+        let minute: TimeInterval = 60
+        let hour: TimeInterval = 60 * minute
+        let day: TimeInterval = 24 * hour
+
+        if remaining < hour {
+            let minutes = max(1, Int(ceil(remaining / minute)))
+            return "in \(minutes) \(Self.unit("minute", count: minutes))"
+        }
+
+        if remaining < day {
+            let hours = Int(ceil(remaining / hour))
+            return "in \(hours) \(Self.unit("hour", count: hours))"
+        }
+
+        let roundedHours = Int(ceil(remaining / hour))
+        let days = roundedHours / 24
+        let hours = roundedHours % 24
+
+        if hours == 0 {
+            return "in \(days) \(Self.unit("day", count: days))"
+        }
+
+        return "in \(days) \(Self.unit("day", count: days)) \(hours) \(Self.unit("hour", count: hours))"
+    }
+
+    private static func unit(_ singular: String, count: Int) -> String {
+        count == 1 ? singular : "\(singular)s"
     }
 
     /// Exact reset time formatted in user's timezone for tooltip display

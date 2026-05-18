@@ -50,4 +50,39 @@ final class UsageLimitRiskTests: XCTestCase {
 
         XCTAssertFalse(usageLimit.isAtRisk(windowDuration: sessionWindow))
     }
+
+    func test_resetDescription_whenUnderOneHour_showsRoundedUpMinutes() {
+        XCTAssertEqual(
+            UsageLimit.resetDescription(for: 45.2 * 60),
+            "in 46 minutes"
+        )
+    }
+
+    func test_resetDescription_whenUnderOneDay_showsRoundedUpHours() {
+        XCTAssertEqual(
+            UsageLimit.resetDescription(for: 3.1 * 60 * 60),
+            "in 4 hours"
+        )
+    }
+
+    func test_resetDescription_whenOverOneDay_showsDaysAndHours() {
+        XCTAssertEqual(
+            UsageLimit.resetDescription(for: 40 * 60 * 60),
+            "in 1 day 16 hours"
+        )
+    }
+
+    func test_resetDescription_whenExactlyWholeDays_omitsZeroHours() {
+        XCTAssertEqual(
+            UsageLimit.resetDescription(for: 2 * 24 * 60 * 60),
+            "in 2 days"
+        )
+    }
+
+    func test_resetDescription_whenPastResetTime_showsNow() {
+        XCTAssertEqual(
+            UsageLimit.resetDescription(for: -60),
+            "now"
+        )
+    }
 }
