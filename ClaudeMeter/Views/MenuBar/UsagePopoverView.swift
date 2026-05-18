@@ -32,8 +32,7 @@ struct UsagePopoverView: View {
                 }) {
                     if appModel.isRefreshing {
                         ProgressView()
-                            .scaleEffect(0.7)
-                            .frame(width: 20, height: 20)
+                            .controlSize(.small)
                     } else {
                         Image(systemName: "arrow.clockwise")
                     }
