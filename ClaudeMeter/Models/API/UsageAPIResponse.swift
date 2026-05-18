@@ -49,38 +49,30 @@ enum MappingError: LocalizedError {
 /// Extension to map API response to domain model
 extension UsageAPIResponse {
     func toDomain() throws -> UsageData {
-        // Configure ISO8601 formatter with proper options
         let iso8601Formatter = ISO8601DateFormatter()
         iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        // Parse reset dates (must be present and valid)
-        let sessionResetDate: Date
-        let weeklyResetDate: Date
-
-        guard let sessionResetString = fiveHour.resetsAt,
-              let parsedDate = iso8601Formatter.date(from: sessionResetString) else {
-            throw MappingError.missingCriticalField(field: "fiveHour.resetsAt")
-        }
-        sessionResetDate = parsedDate
-
-        guard let weeklyResetString = sevenDay.resetsAt,
-              let parsedDate = iso8601Formatter.date(from: weeklyResetString) else {
-            throw MappingError.missingCriticalField(field: "sevenDay.resetsAt")
-        }
-        weeklyResetDate = parsedDate
+        let sessionResetDate = try parseResetDate(
+            from: fiveHour.resetsAt,
+            field: "fiveHour.resetsAt",
+            formatter: iso8601Formatter,
+            fallback: Constants.Pacing.sessionWindow
+        )
+        let weeklyResetDate = try parseResetDate(
+            from: sevenDay.resetsAt,
+            field: "sevenDay.resetsAt",
+            formatter: iso8601Formatter,
+            fallback: Constants.Pacing.weeklyWindow
+        )
 
         // Handle optional sonnet usage
-        let sonnetLimit: UsageLimit? = sevenDaySonnet.flatMap { sonnet in
-            let sonnetResetDate: Date
-
-            if let sonnetResetString = sonnet.resetsAt,
-               let parsedDate = iso8601Formatter.date(from: sonnetResetString) {
-                sonnetResetDate = parsedDate
-            } else {
-                // Default to 7 days in the future if no reset date
-                sonnetResetDate = Date().addingTimeInterval(7 * 24 * 3600)
-            }
-
+        let sonnetLimit: UsageLimit? = try sevenDaySonnet.flatMap { sonnet -> UsageLimit? in
+            let sonnetResetDate = try parseResetDate(
+                from: sonnet.resetsAt,
+                field: "sevenDaySonnet.resetsAt",
+                formatter: iso8601Formatter,
+                fallback: Constants.Pacing.weeklyWindow
+            )
             return UsageLimit(
                 utilization: sonnet.utilization,
                 resetAt: sonnetResetDate
@@ -99,5 +91,20 @@ extension UsageAPIResponse {
             sonnetUsage: sonnetLimit,
             lastUpdated: Date()
         )
+    }
+
+    private func parseResetDate(
+        from rawValue: String?,
+        field: String,
+        formatter: ISO8601DateFormatter,
+        fallback: TimeInterval
+    ) throws -> Date {
+        guard let rawValue else {
+            return Date().addingTimeInterval(fallback)
+        }
+        guard let date = formatter.date(from: rawValue) else {
+            throw MappingError.missingCriticalField(field: field)
+        }
+        return date
     }
 }

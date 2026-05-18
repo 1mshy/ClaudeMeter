@@ -181,11 +181,52 @@ final class UsageServiceTests: XCTestCase {
         assertDate(usageData.weeklyUsage.resetAt, equalsIso8601String: TestConstants.weeklyResetDateString)
     }
 
-    func test_usageFetch_withInvalidPayload_surfacesInvalidResponse() async throws {
+    func test_usageFetch_withMissingResetAt_usesFallbackWindow() async throws {
+        let responseData = try makeUsageResponseData(
+            sessionUtilization: 0,
+            weeklyUtilization: TestConstants.weeklyPercentage,
+            sessionResetAt: nil,
+            weeklyResetAt: TestConstants.weeklyResetDateString,
+            sonnetUtilization: nil,
+            sonnetResetAt: nil
+        )
+
+        let networkService = NetworkServiceStub(responseData: responseData)
+        let cacheRepository = CacheRepositoryFake()
+        let keychainRepository = KeychainRepositoryFake()
+        let settingsRepository = SettingsRepositoryFake()
+
+        let service = UsageService(
+            networkService: networkService,
+            cacheRepository: cacheRepository,
+            keychainRepository: keychainRepository,
+            settingsRepository: settingsRepository
+        )
+
+        try await keychainRepository.save(
+            sessionKey: TestConstants.sessionKeyValue,
+            account: "default"
+        )
+
+        var settings = AppSettings.default
+        settings.cachedOrganizationId = UUID(uuidString: TestConstants.organizationUUIDString)
+        try await settingsRepository.save(settings)
+
+        let usageData = try await service.fetchUsage(forceRefresh: true)
+
+        XCTAssertEqual(usageData.sessionUsage.utilization, 0)
+        XCTAssertGreaterThan(usageData.sessionUsage.resetAt.timeIntervalSinceNow, 0)
+        XCTAssertLessThanOrEqual(
+            usageData.sessionUsage.resetAt.timeIntervalSinceNow,
+            Constants.Pacing.sessionWindow + 5
+        )
+    }
+
+    func test_usageFetch_withMalformedResetAt_surfacesInvalidResponse() async throws {
         let responseData = try makeUsageResponseData(
             sessionUtilization: TestConstants.sessionPercentage,
             weeklyUtilization: TestConstants.weeklyPercentage,
-            sessionResetAt: nil,
+            sessionResetAt: "not-a-date",
             weeklyResetAt: TestConstants.weeklyResetDateString,
             sonnetUtilization: nil,
             sonnetResetAt: nil
