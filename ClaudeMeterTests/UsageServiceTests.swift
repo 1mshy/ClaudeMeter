@@ -350,6 +350,43 @@ final class UsageServiceTests: XCTestCase {
         }
     }
 
+    func test_usageFetch_withoutFractionalSeconds_parsesResetDates() async throws {
+        let responseData = Data("""
+        {
+          "five_hour": {"utilization": 9.0, "resets_at": "2025-01-01T00:00:00Z"},
+          "seven_day": {"utilization": 40.0, "resets_at": "2025-01-08T00:00:00+00:00"}
+        }
+        """.utf8)
+
+        let networkService = NetworkServiceStub(responseData: responseData)
+        let cacheRepository = CacheRepositoryFake()
+        let keychainRepository = KeychainRepositoryFake()
+        let settingsRepository = SettingsRepositoryFake()
+
+        let service = UsageService(
+            networkService: networkService,
+            cacheRepository: cacheRepository,
+            keychainRepository: keychainRepository,
+            settingsRepository: settingsRepository
+        )
+
+        try await keychainRepository.save(
+            sessionKey: TestConstants.sessionKeyValue,
+            account: "default"
+        )
+
+        var settings = AppSettings.default
+        settings.cachedOrganizationId = UUID(uuidString: TestConstants.organizationUUIDString)
+        try await settingsRepository.save(settings)
+
+        let usageData = try await service.fetchUsage(forceRefresh: true)
+
+        let plainFormatter = ISO8601DateFormatter()
+        plainFormatter.formatOptions = [.withInternetDateTime]
+        XCTAssertEqual(usageData.sessionUsage.resetAt, plainFormatter.date(from: "2025-01-01T00:00:00Z"))
+        XCTAssertEqual(usageData.weeklyUsage.resetAt, plainFormatter.date(from: "2025-01-08T00:00:00Z"))
+    }
+
     func test_usageFetch_withScopedFableLimit_showsFableUsage() async throws {
         // Mirrors the live API shape where Fable appears only as a
         // model-scoped entry in the `limits` array

@@ -165,7 +165,13 @@ extension UsageAPIResponse {
         guard let rawValue else {
             return Date().addingTimeInterval(fallback)
         }
-        guard let date = formatter.date(from: rawValue) else {
+        if let date = formatter.date(from: rawValue) {
+            return date
+        }
+        // The API is inconsistent about fractional seconds, so retry without them
+        let plainFormatter = ISO8601DateFormatter()
+        plainFormatter.formatOptions = [.withInternetDateTime]
+        guard let date = plainFormatter.date(from: rawValue) else {
             throw MappingError.missingCriticalField(field: field)
         }
         return date
