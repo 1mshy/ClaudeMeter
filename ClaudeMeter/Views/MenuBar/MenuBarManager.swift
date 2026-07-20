@@ -99,6 +99,7 @@ final class MenuBarManager {
             _ = appModel.usageData
             _ = appModel.isLoading
             _ = appModel.settings.iconStyle
+            _ = appModel.settings.menuBarMetric
             _ = appModel.settings.isColoredIcon
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -112,9 +113,10 @@ final class MenuBarManager {
     private func updateIcon() {
         guard let button = statusItem?.button else { return }
 
-        let percentage = clamped(appModel.usageData?.sessionUsage.percentage ?? 0)
+        let primaryLimit = primaryLimit(for: appModel.settings.menuBarMetric)
+        let percentage = clamped(primaryLimit?.percentage ?? 0)
         let weeklyPercentage = clamped(appModel.usageData?.weeklyUsage.percentage ?? 0)
-        let status = appModel.usageData?.primaryStatus ?? .safe
+        let status = primaryLimit?.status ?? .safe
         let isStale = appModel.usageData?.isStale ?? false
         let isLoading = appModel.isLoading
         let style = appModel.settings.iconStyle
@@ -157,6 +159,17 @@ final class MenuBarManager {
         button.image = image
     }
 
+
+    /// Resolves the usage limit shown as the menu bar percentage.
+    /// Falls back to the weekly limit when Fable data is unavailable.
+    private func primaryLimit(for metric: MenuBarMetric) -> UsageLimit? {
+        guard let usageData = appModel.usageData else { return nil }
+        switch metric {
+        case .session: return usageData.sessionUsage
+        case .weekly: return usageData.weeklyUsage
+        case .fable: return usageData.fableUsage ?? usageData.weeklyUsage
+        }
+    }
 
     private func clamped(_ value: Double) -> Double {
         max(0, min(value, 100))

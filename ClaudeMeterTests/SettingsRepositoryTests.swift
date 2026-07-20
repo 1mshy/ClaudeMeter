@@ -21,6 +21,7 @@ final class SettingsRepositoryTests: XCTestCase {
         settings.isFirstLaunch = false
         settings.cachedOrganizationId = UUID(uuidString: TestConstants.organizationUUIDString)
         settings.iconStyle = .segments
+        settings.menuBarMetric = .fable
         settings.isColoredIcon = false
 
         try await repository.save(settings)
@@ -49,6 +50,7 @@ final class SettingsRepositoryTests: XCTestCase {
         let settings = try JSONDecoder().decode(AppSettings.self, from: data)
 
         XCTAssertTrue(settings.isColoredIcon)
+        XCTAssertEqual(settings.menuBarMetric, .session)
     }
 
     func test_notificationStatePersistsAcrossLaunches() async throws {

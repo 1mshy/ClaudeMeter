@@ -7,6 +7,21 @@
 
 import Foundation
 
+/// Which usage limit drives the percentage shown in the menu bar
+enum MenuBarMetric: String, Codable, CaseIterable, Sendable {
+    case session
+    case weekly
+    case fable
+
+    var displayName: String {
+        switch self {
+        case .session: "5-Hour Session"
+        case .weekly: "Weekly"
+        case .fable: "Fable"
+        }
+    }
+}
+
 /// User preferences and app configuration
 struct AppSettings: Codable, Equatable, Sendable {
     /// Refresh interval in seconds (60-600)
@@ -33,6 +48,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     /// Menu bar icon display style
     var iconStyle: IconStyle
 
+    /// Which usage limit the menu bar percentage reflects
+    var menuBarMetric: MenuBarMetric
+
     /// Whether menu bar icons are shown in color instead of monochrome.
     var isColoredIcon: Bool
 
@@ -45,6 +63,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         isSonnetUsageShown: false,
         isFableUsageShown: true,
         iconStyle: .battery,
+        menuBarMetric: .session,
         isColoredIcon: true
     )
 
@@ -57,6 +76,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         case isSonnetUsageShown = "show_sonnet_usage"
         case isFableUsageShown = "show_fable_usage"
         case iconStyle = "icon_style"
+        case menuBarMetric = "menu_bar_metric"
         case isColoredIcon = "is_colored_icon"
     }
 }
@@ -74,6 +94,7 @@ extension AppSettings {
         isSonnetUsageShown = try container.decodeIfPresent(Bool.self, forKey: .isSonnetUsageShown) ?? defaults.isSonnetUsageShown
         isFableUsageShown = try container.decodeIfPresent(Bool.self, forKey: .isFableUsageShown) ?? defaults.isFableUsageShown
         iconStyle = try container.decodeIfPresent(IconStyle.self, forKey: .iconStyle) ?? defaults.iconStyle
+        menuBarMetric = try container.decodeIfPresent(MenuBarMetric.self, forKey: .menuBarMetric) ?? defaults.menuBarMetric
         isColoredIcon = try container.decodeIfPresent(Bool.self, forKey: .isColoredIcon) ?? defaults.isColoredIcon
     }
 }

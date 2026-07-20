@@ -63,6 +63,7 @@ struct SettingsView: View {
                 refreshIntervalSection
                 fableUsageSection
                 sonnetUsageSection
+                menuBarMetricSection
                 iconStyleSection
                 launchAtLoginSection
             }
@@ -249,6 +250,34 @@ struct SettingsView: View {
 
             Toggle("", isOn: $appModel.settings.isSonnetUsageShown)
                 .labelsHidden()
+        }
+        .padding()
+        .background(.quaternary.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    // MARK: - Menu Bar Metric Section
+
+    private var menuBarMetricSection: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Menu Bar Percentage")
+                    .font(.subheadline)
+                Text("Which usage limit the menu bar icon displays")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Picker("", selection: $appModel.settings.menuBarMetric) {
+                ForEach(MenuBarMetric.allCases, id: \.self) { metric in
+                    Text(metric.displayName).tag(metric)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 140)
         }
         .padding()
         .background(.quaternary.opacity(0.3))
