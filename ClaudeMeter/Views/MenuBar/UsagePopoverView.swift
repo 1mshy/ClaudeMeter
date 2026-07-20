@@ -103,6 +103,16 @@ struct UsagePopoverView: View {
                             windowDuration: Constants.Pacing.weeklyWindow
                         )
 
+                        // Fable usage card (conditional rendering)
+                        if appModel.settings.isFableUsageShown, let fableUsage = usageData.fableUsage {
+                            UsageCardView(
+                                title: "Weekly Fable",
+                                usageLimit: fableUsage,
+                                icon: "wand.and.stars",
+                                windowDuration: Constants.Pacing.weeklyWindow
+                            )
+                        }
+
                         // Sonnet usage card (conditional rendering)
                         if appModel.settings.isSonnetUsageShown, let sonnetUsage = usageData.sonnetUsage {
                             UsageCardView(

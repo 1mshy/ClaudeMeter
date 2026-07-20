@@ -170,6 +170,7 @@ private func makeUsageData(percentage: Double) -> UsageData {
         sessionUsage: sessionUsage,
         weeklyUsage: weeklyUsage,
         sonnetUsage: nil,
+        fableUsage: nil,
         lastUpdated: Date()
     )
 }

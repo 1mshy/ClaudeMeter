@@ -59,6 +59,19 @@ enum DemoDataFactory {
             )
             appModel.settings.isSonnetUsageShown = true
 
+        case .withFable:
+            appModel.applyDemoState(
+                usageData: makeUsageData(
+                    sessionPercentage: 65,
+                    weeklyPercentage: 40,
+                    fablePercentage: 80
+                ),
+                isSetupComplete: true,
+                errorMessage: nil,
+                isLoading: false
+            )
+            appModel.settings.isFableUsageShown = true
+
         case .loading:
             appModel.applyDemoState(
                 usageData: nil,
@@ -89,7 +102,8 @@ enum DemoDataFactory {
     private static func makeUsageData(
         sessionPercentage: Double,
         weeklyPercentage: Double,
-        sonnetPercentage: Double? = nil
+        sonnetPercentage: Double? = nil,
+        fablePercentage: Double? = nil
     ) -> UsageData {
         let sessionResetAt = Date().addingTimeInterval(3 * 3600) // 3 hours from now
         let weeklyResetAt = Date().addingTimeInterval(4 * 24 * 3600) // 4 days from now
@@ -104,10 +118,18 @@ enum DemoDataFactory {
             sonnetUsage = nil
         }
 
+        let fableUsage: UsageLimit?
+        if let fablePercentage {
+            fableUsage = UsageLimit(utilization: fablePercentage, resetAt: weeklyResetAt)
+        } else {
+            fableUsage = nil
+        }
+
         return UsageData(
             sessionUsage: sessionUsage,
             weeklyUsage: weeklyUsage,
             sonnetUsage: sonnetUsage,
+            fableUsage: fableUsage,
             lastUpdated: Date()
         )
     }

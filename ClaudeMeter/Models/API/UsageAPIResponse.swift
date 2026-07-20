@@ -12,11 +12,43 @@ struct UsageAPIResponse: Codable {
     let fiveHour: UsageLimitResponse
     let sevenDay: UsageLimitResponse
     let sevenDaySonnet: UsageLimitResponse?
+    let sevenDayFable: UsageLimitResponse?
+    let limits: [ScopedLimitResponse]?
 
     enum CodingKeys: String, CodingKey {
         case fiveHour = "five_hour"
         case sevenDay = "seven_day"
         case sevenDaySonnet = "seven_day_sonnet"
+        case sevenDayFable = "seven_day_fable"
+        case limits
+    }
+}
+
+/// Entry in the generic `limits` array, which carries model-scoped limits
+/// (e.g. the weekly Fable limit) not exposed as top-level fields
+struct ScopedLimitResponse: Codable {
+    let kind: String
+    let percent: Double?
+    let resetsAt: String?
+    let scope: LimitScopeResponse?
+
+    enum CodingKeys: String, CodingKey {
+        case kind
+        case percent
+        case resetsAt = "resets_at"
+        case scope
+    }
+}
+
+struct LimitScopeResponse: Codable {
+    let model: LimitModelScopeResponse?
+}
+
+struct LimitModelScopeResponse: Codable {
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
     }
 }
 
@@ -79,6 +111,36 @@ extension UsageAPIResponse {
             )
         }
 
+        // Handle optional fable usage: prefer the explicit top-level field,
+        // otherwise fall back to the model-scoped entry in the limits array
+        var fableLimit: UsageLimit? = try sevenDayFable.flatMap { fable -> UsageLimit? in
+            let fableResetDate = try parseResetDate(
+                from: fable.resetsAt,
+                field: "sevenDayFable.resetsAt",
+                formatter: iso8601Formatter,
+                fallback: Constants.Pacing.weeklyWindow
+            )
+            return UsageLimit(
+                utilization: fable.utilization,
+                resetAt: fableResetDate
+            )
+        }
+
+        if fableLimit == nil,
+           let scopedFable = limits?.first(where: { $0.scope?.model?.displayName == "Fable" }),
+           let percent = scopedFable.percent {
+            let fableResetDate = try parseResetDate(
+                from: scopedFable.resetsAt,
+                field: "limits[Fable].resetsAt",
+                formatter: iso8601Formatter,
+                fallback: Constants.Pacing.weeklyWindow
+            )
+            fableLimit = UsageLimit(
+                utilization: percent,
+                resetAt: fableResetDate
+            )
+        }
+
         return UsageData(
             sessionUsage: UsageLimit(
                 utilization: fiveHour.utilization,
@@ -89,6 +151,7 @@ extension UsageAPIResponse {
                 resetAt: weeklyResetDate
             ),
             sonnetUsage: sonnetLimit,
+            fableUsage: fableLimit,
             lastUpdated: Date()
         )
     }

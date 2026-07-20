@@ -23,4 +23,6 @@ enum TestConstants {
     static let weeklyResetDateString = "2025-01-08T00:00:00.000Z"
     static let sonnetPercentage: Double = 5
     static let sonnetResetDateString = "2025-01-04T00:00:00.000Z"
+    static let fablePercentage: Double = 60
+    static let fableResetDateString = "2025-01-06T00:00:00.000Z"
 }

@@ -18,6 +18,9 @@ struct UsageData: Codable, Equatable, Sendable {
     /// 7-day Sonnet-specific usage (nil if not used)
     let sonnetUsage: UsageLimit?
 
+    /// 7-day Fable-specific usage (nil if not used)
+    let fableUsage: UsageLimit?
+
     /// Timestamp of when this data was fetched
     let lastUpdated: Date
 
@@ -25,6 +28,7 @@ struct UsageData: Codable, Equatable, Sendable {
         case sessionUsage = "session_usage"
         case weeklyUsage = "weekly_usage"
         case sonnetUsage = "sonnet_usage"
+        case fableUsage = "fable_usage"
         case lastUpdated = "last_updated"
     }
 }
